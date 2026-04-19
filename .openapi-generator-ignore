@@ -1,0 +1,16 @@
+# OpenAPI Generator Ignore
+# This file prevents the generator from overwriting these specific files.
+
+# Keep our Maryland clinic configuration
+src/main/resources/application.properties
+
+# Keep our WireSpeedDemons main entry point
+src/main/java/com/wirespeed/clinic/ClinicConnectApplication.java
+
+# Keep our custom Maven build settings
+pom.xml
+
+# Optional: Ignore standard help files if you don't want them cluttering the root
+README.md
+.travis.yml
+.gitignore

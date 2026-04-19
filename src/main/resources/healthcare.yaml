@@ -1,0 +1,273 @@
+openapi: 3.0.0
+info:
+  title: Health Care Management API
+  description: "REST API for managing patients, providers, and clinical appointments in Maryland community clinics."
+  contact:
+    name: WireSpeedDemons
+    url: https://ep.jhu.edu/WireSpeedDemonsSupport
+    email: WireSpeedDemons@support.jhu.edu
+  version: "1.0"
+servers:
+- url: http://localhost:8080/api
+  description: Local Development Server
+paths:
+  /auth/login:
+    post:
+      tags:
+      - Auth
+      summary: Authenticate user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /patients:
+    get:
+      tags:
+      - Patients
+      summary: Get all patients
+      responses:
+        "200":
+          description: List of patients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Patient"
+    post:
+      tags:
+      - Patients
+      summary: Create new patient profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Patient"
+      responses:
+        "201":
+          description: Patient created
+  /patients/{id}/appointments:
+    get:
+      tags:
+      - Patients
+      - Appointments
+      summary: View personal appointment history for a specific patient
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Patient appointment history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+  /providers:
+    get:
+      tags:
+      - Providers
+      summary: Get all providers
+      responses:
+        "200":
+          description: List of providers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Provider"
+    post:
+      tags:
+      - Providers
+      summary: Register a healthcare provider with NPI validation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Provider"
+      responses:
+        "201":
+          description: Provider registered
+        "422":
+          description: Unprocessable Entity - NPI validation failed
+  /appointments:
+    get:
+      tags:
+      - Appointments
+      summary: Get appointments with optional filtering
+      parameters:
+      - name: providerId
+        in: query
+        description: Filter for assigned appointments
+        required: false
+        schema:
+          type: integer
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: "#/components/schemas/AppointmentStatus"
+      responses:
+        "200":
+          description: List of appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+    post:
+      tags:
+      - Appointments
+      summary: Schedule a new appointment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Appointment"
+      responses:
+        "201":
+          description: Appointment scheduled
+  /appointments/{id}:
+    patch:
+      tags:
+      - Appointments
+      summary: Update appointment status or add clinical notes
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/appointments_id_body"
+      responses:
+        "200":
+          description: Appointment updated successfully
+components:
+  schemas:
+    Patient:
+      required:
+      - email
+      - firstName
+      - lastName
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        zipCode:
+          type: string
+    Provider:
+      required:
+      - firstName
+      - lastName
+      - npiNumber
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        npiNumber:
+          type: string
+          description: Required for external CMS validation
+        specialty:
+          type: string
+    Appointment:
+      required:
+      - appointmentDate
+      - patientId
+      - providerId
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        providerId:
+          type: integer
+        appointmentDate:
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/AppointmentStatus"
+        notes:
+          type: string
+          description: Clinical documentation added by provider
+    AppointmentStatus:
+      type: string
+      enum:
+      - SCHEDULED
+      - CHECKED_IN
+      - IN_PROGRESS
+      - COMPLETED
+      - CANCELLED
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        message:
+          type: string
+        path:
+          type: string
+    appointments_id_body:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/AppointmentStatus"
+        notes:
+          type: string
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
