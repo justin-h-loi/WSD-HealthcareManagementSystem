@@ -57,6 +57,55 @@ paths:
       responses:
         "201":
           description: Patient created
+  /patients/{id}:
+    get:
+      tags:
+      - Patients
+      summary: Get a specific patient
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Patient details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+    put:
+      tags:
+      - Patients
+      summary: Update an existing patient profile
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Patient"
+      responses:
+        "200":
+          description: Patient updated
+    delete:
+      tags:
+      - Patients
+      summary: Delete a patient profile
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: Patient deleted
   /patients/{id}/appointments:
     get:
       tags:
@@ -106,6 +155,57 @@ paths:
           description: Provider registered
         "422":
           description: Unprocessable Entity - NPI validation failed
+  /providers/{id}:
+    get:
+      tags:
+      - Providers
+      summary: Get a specific provider
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Provider details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+    put:
+      tags:
+      - Providers
+      summary: Update an existing healthcare provider
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Provider"
+      responses:
+        "200":
+          description: Provider updated
+        "422":
+          description: Unprocessable Entity - NPI validation failed
+    delete:
+      tags:
+      - Providers
+      summary: Delete a healthcare provider
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: Provider deleted
   /appointments:
     get:
       tags:
@@ -145,10 +245,27 @@ paths:
         "201":
           description: Appointment scheduled
   /appointments/{id}:
-    patch:
+    get:
       tags:
       - Appointments
-      summary: Update appointment status or add clinical notes
+      summary: Get a specific appointment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Appointment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+    put:
+      tags:
+      - Appointments
+      summary: Update an existing appointment
       parameters:
       - name: id
         in: path
@@ -159,10 +276,23 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/appointments_id_body"
+              $ref: "#/components/schemas/Appointment"
       responses:
         "200":
           description: Appointment updated successfully
+    delete:
+      tags:
+      - Appointments
+      summary: Delete an appointment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: Appointment deleted successfully
 components:
   schemas:
     Patient:
@@ -256,13 +386,6 @@ components:
         message:
           type: string
         path:
-          type: string
-    appointments_id_body:
-      type: object
-      properties:
-        status:
-          $ref: "#/components/schemas/AppointmentStatus"
-        notes:
           type: string
   responses:
     Unauthorized:
