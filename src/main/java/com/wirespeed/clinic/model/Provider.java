@@ -2,15 +2,10 @@ package com.wirespeed.clinic.model;
 
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import jakarta.annotation.Generated;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-04-19T00:09:17.180339900-04:00[America/New_York]", comments = "Generator version: 7.4.0")
@@ -33,6 +28,12 @@ public class Provider {
 
   private String specialty;
 
+  // NEW SECURITY LINK: Connects this clinical record to a login identity
+  @OneToOne
+  @JoinColumn(name = "user_id", referencedColumnName = "id")
+  @JsonIgnore 
+  private User user;
+
   public Provider() {
     super();
   }
@@ -42,6 +43,18 @@ public class Provider {
     this.lastName = lastName;
     this.npiNumber = npiNumber;
   }
+
+  // --- Identity & Ownership Methods ---
+  
+  public User getUser() {
+    return user;
+  }
+
+  public void setUser(User user) {
+    this.user = user;
+  }
+
+  // --- Standard Boilerplate (Maintained for OpenAPI Compatibility) ---
 
   public Provider id(Integer id) {
     this.id = id;
@@ -118,12 +131,8 @@ public class Provider {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
+    if (this == obj) return true;
+    if (obj == null || getClass() != obj.getClass()) return false;
     Provider provider = (Provider) obj;
     return Objects.equals(this.id, provider.id) &&
         Objects.equals(this.firstName, provider.firstName) &&
@@ -150,14 +159,8 @@ public class Provider {
     return sb.toString();
   }
 
-  /**
-   * Convert the given object to string with each line indented by 4 spaces
-   * (except the first line).
-   */
   private String toIndentedString(Object obj) {
-    if (obj == null) {
-      return "null";
-    }
+    if (obj == null) return "null";
     return obj.toString().replace("\n", "\n    ");
   }
 }
