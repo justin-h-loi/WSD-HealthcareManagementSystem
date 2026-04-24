@@ -1,6 +1,5 @@
 package com.wirespeed.clinic.security;
 
-import com.wirespeed.clinic.model.Provider;
 import com.wirespeed.clinic.repository.ProviderRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;

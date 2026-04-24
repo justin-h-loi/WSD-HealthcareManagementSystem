@@ -57,7 +57,7 @@ public class NpiRegistryService {
                     String cleanInputFirst = inputFirstName.replaceAll("[^a-zA-Z]", "").toUpperCase();
                     String cleanInputLast = inputLastName.replaceAll("[^a-zA-Z]", "").toUpperCase();
 
-                    // TELEMETRY: This will prove the logic to your instructor
+                    // TELEMETRY
                     System.out.println("========================================");
                     System.out.println("NPI REGISTRY TELEMETRY");
                     System.out.println("CMS RAW FIRST : [" + regFirst + "]");

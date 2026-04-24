@@ -1,0 +1,1972 @@
+{
+  "info": {
+    "_postman_id": "d2a4c4e4-5f1f-4a3d-8ab9-8c7f3c5d7e20",
+    "name": "ClinicConnect Project API",
+    "description": "Project-specific Postman collection for the ClinicConnect Healthcare Management System. This collection combines the auth and security workflow from the ClinicConnect template with the CRUD coverage and test style from the WSD Healthcare Management System template.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{current_jwt}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const requestName = (pm.info && pm.info.requestName) ? pm.info.requestName : ((pm.request && pm.request.name) ? pm.request.name : '');",
+          "const initializeRun = () => {",
+          "    const runId = Date.now().toString();",
+          "    const suffix = runId.slice(-6);",
+          "    const appointmentDate = new Date(Date.now() + (14 * 24 * 60 * 60 * 1000));",
+          "    appointmentDate.setUTCHours(14, 0, 0, 0);",
+          "    const appointmentIso = appointmentDate.toISOString().replace('.000Z', 'Z');",
+          "    pm.collectionVariables.set('run_id', runId);",
+          "    pm.collectionVariables.set('default_password', 'password123');",
+          "    pm.collectionVariables.set('admin_username', `admin_${suffix}`);",
+          "    pm.collectionVariables.set('admin_email', `admin.${suffix}@clinicconnect.local`);",
+          "    pm.collectionVariables.set('provider1_username', `prov1_${suffix}`);",
+          "    pm.collectionVariables.set('provider1_email', `provider1.${suffix}@clinicconnect.local`);",
+          "    pm.collectionVariables.set('provider2_username', `prov2_${suffix}`);",
+          "    pm.collectionVariables.set('provider2_email', `provider2.${suffix}@clinicconnect.local`);",
+          "    pm.collectionVariables.set('patient_user_username', `patusr_${suffix}`);",
+          "    pm.collectionVariables.set('patient_user_email', `patientuser.${suffix}@clinicconnect.local`);",
+          "    pm.collectionVariables.set('patient_email', `patient.${suffix}@clinicconnect.local`);",
+          "    pm.collectionVariables.set('provider1_first_name', 'STEFFI');",
+          "    pm.collectionVariables.set('provider1_last_name', 'RESNICK');",
+          "    pm.collectionVariables.set('provider1_npi', '1073731121');",
+          "    pm.collectionVariables.set('provider1_specialty', 'Audiologist');",
+          "    pm.collectionVariables.set('provider2_first_name', 'KAREN');",
+          "    pm.collectionVariables.set('provider2_last_name', 'FAHEY');",
+          "    pm.collectionVariables.set('provider2_npi', '1003884842');",
+          "    pm.collectionVariables.set('provider2_specialty', 'Family Practice');",
+          "    pm.collectionVariables.set('appointment_iso', appointmentIso);",
+          "    pm.collectionVariables.set('availability_date', appointmentIso.slice(0, 10));",
+          "    pm.collectionVariables.set('appointment_notes', 'Patient reported mild fever. Follow-up in 2 weeks.');",
+          "    ['current_jwt', 'bearer_admin', 'bearer_provider1', 'bearer_provider2', 'bearer_patient', 'patient_id', 'provider1_id', 'provider2_id', 'appointment_id'].forEach(function (key) {",
+          "        pm.collectionVariables.set(key, '');",
+          "    });",
+          "};",
+          "const usernamesLookInvalid = ['admin_username', 'provider1_username', 'provider2_username', 'patient_user_username'].some(function (key) {",
+          "    return (pm.collectionVariables.get(key) || '').length > 20;",
+          "});",
+          "if (requestName === 'Signup Admin') {",
+          "    initializeRun();",
+          "}",
+          "if (!pm.collectionVariables.get('run_id') || usernamesLookInvalid) {",
+          "    initializeRun();",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Response time is under 1500ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(1500);",
+          "});",
+          "const contentType = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+          "pm.test('JSON responses parse cleanly when present', function () {",
+          "    if (contentType.includes('application/json') || contentType.includes('+json')) {",
+          "        pm.response.to.have.jsonBody();",
+          "        pm.response.json();",
+          "    } else {",
+          "        pm.expect(true).to.eql(true);",
+          "    }",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Auth and Identity",
+      "item": [
+        {
+          "name": "Signup Admin",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Signup returns success message', function () {",
+                  "    pm.expect(json.message).to.eql('User registered successfully!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{default_password}}\",\n  \"role\": [\"admin\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Signup Provider 1",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Provider 1 signup succeeds', function () {",
+                  "    pm.expect(pm.response.json().message).to.eql('User registered successfully!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{provider1_username}}\",\n  \"email\": \"{{provider1_email}}\",\n  \"password\": \"{{default_password}}\",\n  \"role\": [\"provider\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Signup Provider 2",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Provider 2 signup succeeds', function () {",
+                  "    pm.expect(pm.response.json().message).to.eql('User registered successfully!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{provider2_username}}\",\n  \"email\": \"{{provider2_email}}\",\n  \"password\": \"{{default_password}}\",\n  \"role\": [\"provider\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Signup Patient App User",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Patient app user signup succeeds', function () {",
+                  "    pm.expect(pm.response.json().message).to.eql('User registered successfully!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{patient_user_username}}\",\n  \"email\": \"{{patient_user_email}}\",\n  \"password\": \"{{default_password}}\",\n  \"role\": [\"user\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Admin",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Admin token is returned', function () {",
+                  "    pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('bearer_admin', json.accessToken);",
+                  "pm.collectionVariables.set('current_jwt', json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{default_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signin"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Provider 1",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Provider 1 token is returned', function () {",
+                  "    pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('bearer_provider1', json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{provider1_username}}\",\n  \"password\": \"{{default_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signin"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Provider 2",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Provider 2 token is returned', function () {",
+                  "    pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('bearer_provider2', json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{provider2_username}}\",\n  \"password\": \"{{default_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signin"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Patient App User",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Patient app token is returned', function () {",
+                  "    pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('bearer_patient', json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{patient_user_username}}\",\n  \"password\": \"{{default_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signin"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Patients",
+      "item": [
+        {
+          "name": "Create Patient - valid",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jordan\",\n  \"lastName\": \"Taylor\",\n  \"email\": \"{{patient_email}}\",\n  \"address\": \"101 Health Way\",\n  \"city\": \"Baltimore\",\n  \"zipCode\": \"21201\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Patient - duplicate email",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Duplicate\",\n  \"lastName\": \"Email\",\n  \"email\": \"{{patient_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Patients and Capture Created Patient",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const patients = pm.response.json();",
+                  "const targetEmail = pm.collectionVariables.get('patient_email');",
+                  "const patient = patients.find(function (p) { return p.email === targetEmail; });",
+                  "pm.test('Created patient is present in the list', function () {",
+                  "    pm.expect(patient).to.exist;",
+                  "});",
+                  "if (patient) {",
+                  "    pm.collectionVariables.set('patient_id', patient.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient by Id",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const patient = pm.response.json();",
+                  "pm.test('Fetched patient matches created patient email', function () {",
+                  "    pm.expect(patient.email).to.eql(pm.collectionVariables.get('patient_email'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/{{patient_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "{{patient_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Patient",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jordan\",\n  \"lastName\": \"Taylor\",\n  \"email\": \"{{patient_email}}\",\n  \"address\": \"202 Updated Ave\",\n  \"city\": \"Columbia\",\n  \"zipCode\": \"21044\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/patients/{{patient_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "{{patient_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient by Id After Update",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const patient = pm.response.json();",
+                  "pm.test('Updated city is returned', function () {",
+                  "    pm.expect(patient.city).to.eql('Columbia');",
+                  "});",
+                  "pm.test('Updated address is returned', function () {",
+                  "    pm.expect(patient.address).to.eql('202 Updated Ave');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/{{patient_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "{{patient_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Providers and Access Control",
+      "item": [
+        {
+          "name": "Provider 1 Create Profile",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "const provider = pm.response.json();",
+                  "pm.test('Provider 1 id is returned', function () {",
+                  "    pm.expect(provider.id).to.exist;",
+                  "});",
+                  "pm.collectionVariables.set('provider1_id', provider.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"{{provider1_first_name}}\",\n  \"lastName\": \"{{provider1_last_name}}\",\n  \"npiNumber\": \"{{provider1_npi}}\",\n  \"specialty\": \"{{provider1_specialty}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/providers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "providers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Provider 1 Duplicate Profile Conflict",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"{{provider1_first_name}}\",\n  \"lastName\": \"{{provider1_last_name}}\",\n  \"npiNumber\": \"{{provider1_npi}}\",\n  \"specialty\": \"Conflict Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/providers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "providers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Provider 2 Create Profile",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider2'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "const provider = pm.response.json();",
+                  "pm.test('Provider 2 id is returned', function () {",
+                  "    pm.expect(provider.id).to.exist;",
+                  "});",
+                  "pm.collectionVariables.set('provider2_id', provider.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"{{provider2_first_name}}\",\n  \"lastName\": \"{{provider2_last_name}}\",\n  \"npiNumber\": \"{{provider2_npi}}\",\n  \"specialty\": \"{{provider2_specialty}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/providers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "providers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Provider 1 Set Availability",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"{{availability_date}}\",\n  \"startTime\": \"09:00\",\n  \"endTime\": \"11:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/providers/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "providers",
+                "availability"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin Get All Providers",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const providers = pm.response.json();",
+                  "const provider1Id = Number(pm.collectionVariables.get('provider1_id'));",
+                  "const provider2Id = Number(pm.collectionVariables.get('provider2_id'));",
+                  "pm.test('Admin can see both provider records', function () {",
+                  "    const ids = providers.map(function (provider) { return provider.id; });",
+                  "    pm.expect(ids).to.include(provider1Id);",
+                  "    pm.expect(ids).to.include(provider2Id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/providers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "providers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Provider 1 Get Visible Providers",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const providers = pm.response.json();",
+                  "pm.test('Provider sees exactly one visible profile', function () {",
+                  "    pm.expect(providers).to.be.an('array').with.lengthOf(1);",
+                  "});",
+                  "pm.test('Visible provider belongs to provider 1', function () {",
+                  "    pm.expect(providers[0].id).to.eql(Number(pm.collectionVariables.get('provider1_id')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/providers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "providers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Provider 1 Get Own Profile",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const provider = pm.response.json();",
+                  "pm.test('Returned profile belongs to provider 1', function () {",
+                  "    pm.expect(provider.id).to.eql(Number(pm.collectionVariables.get('provider1_id')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/providers/{{provider1_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "providers",
+                "{{provider1_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Provider 1 Forbidden From Provider 2",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/providers/{{provider2_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "providers",
+                "{{provider2_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Provider 1 Update Own Profile",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const provider = pm.response.json();",
+                  "pm.test('Updated specialty is returned', function () {",
+                  "    pm.expect(provider.specialty).to.eql('Pediatric Audiology');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"{{provider1_first_name}}\",\n  \"lastName\": \"{{provider1_last_name}}\",\n  \"npiNumber\": \"{{provider1_npi}}\",\n  \"specialty\": \"Pediatric Audiology\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/providers/{{provider1_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "providers",
+                "{{provider1_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Appointments and Cleanup",
+      "item": [
+        {
+          "name": "Create Appointment",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"providerId\": {{provider1_id}},\n  \"appointmentDate\": \"{{appointment_iso}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Provider 1 Appointments and Capture Created Appointment",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const appointments = pm.response.json();",
+                  "const targetPatientId = Number(pm.collectionVariables.get('patient_id'));",
+                  "const targetProviderId = Number(pm.collectionVariables.get('provider1_id'));",
+                  "const targetDate = pm.collectionVariables.get('appointment_iso');",
+                  "const appointment = appointments.find(function (item) {",
+                  "    return item.patientId === targetPatientId && item.providerId === targetProviderId && item.appointmentDate === targetDate;",
+                  "});",
+                  "pm.test('Created appointment is present in provider filter results', function () {",
+                  "    pm.expect(appointment).to.exist;",
+                  "});",
+                  "if (appointment) {",
+                  "    pm.collectionVariables.set('appointment_id', appointment.id);",
+                  "}",
+                  "pm.test('Every returned appointment belongs to provider 1', function () {",
+                  "    appointments.forEach(function (item) {",
+                  "        pm.expect(item.providerId).to.eql(targetProviderId);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments?providerId={{provider1_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{provider1_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Appointment by Id",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const appointment = pm.response.json();",
+                  "pm.test('Appointment belongs to the expected patient', function () {",
+                  "    pm.expect(appointment.patientId).to.eql(Number(pm.collectionVariables.get('patient_id')));",
+                  "});",
+                  "pm.test('Default appointment status is SCHEDULED', function () {",
+                  "    pm.expect(appointment.status).to.eql('SCHEDULED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Appointment to Checked In",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"providerId\": {{provider1_id}},\n  \"appointmentDate\": \"{{appointment_iso}}\",\n  \"status\": \"CHECKED_IN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Appointment to Completed",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": {{patient_id}},\n  \"providerId\": {{provider1_id}},\n  \"appointmentDate\": \"{{appointment_iso}}\",\n  \"status\": \"COMPLETED\",\n  \"notes\": \"{{appointment_notes}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Completed Appointments",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const appointments = pm.response.json();",
+                  "const targetId = Number(pm.collectionVariables.get('appointment_id'));",
+                  "pm.test('All returned appointments are completed', function () {",
+                  "    appointments.forEach(function (item) {",
+                  "        pm.expect(item.status).to.eql('COMPLETED');",
+                  "    });",
+                  "});",
+                  "pm.test('Updated appointment appears in completed filter results', function () {",
+                  "    const ids = appointments.map(function (item) { return item.id; });",
+                  "    pm.expect(ids).to.include(targetId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments?status=COMPLETED",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "COMPLETED"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Appointment by Id After Complete",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_provider1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const appointment = pm.response.json();",
+                  "pm.test('Appointment is completed', function () {",
+                  "    pm.expect(appointment.status).to.eql('COMPLETED');",
+                  "});",
+                  "pm.test('Appointment notes were saved', function () {",
+                  "    pm.expect(appointment.notes).to.eql(pm.collectionVariables.get('appointment_notes'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Patient User Get Appointment History",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_patient'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const appointments = pm.response.json();",
+                  "const patientId = Number(pm.collectionVariables.get('patient_id'));",
+                  "const appointmentId = Number(pm.collectionVariables.get('appointment_id'));",
+                  "pm.test('All history entries belong to the requested patient', function () {",
+                  "    appointments.forEach(function (item) {",
+                  "        pm.expect(item.patientId).to.eql(patientId);",
+                  "    });",
+                  "});",
+                  "pm.test('Created appointment appears in patient history', function () {",
+                  "    const ids = appointments.map(function (item) { return item.id; });",
+                  "    pm.expect(ids).to.include(appointmentId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/{{patient_id}}/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "{{patient_id}}",
+                "appointments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Appointment",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Deleted Appointment - 404",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Patient After Appointment Cleanup",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/{{patient_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "{{patient_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin Delete Provider 2",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/providers/{{provider2_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "providers",
+                "{{provider2_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin Delete Provider 1",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('current_jwt', pm.collectionVariables.get('bearer_admin'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/providers/{{provider1_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "providers",
+                "{{provider1_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api"
+    },
+    {
+      "key": "run_id",
+      "value": ""
+    },
+    {
+      "key": "default_password",
+      "value": "password123"
+    },
+    {
+      "key": "current_jwt",
+      "value": ""
+    },
+    {
+      "key": "bearer_admin",
+      "value": ""
+    },
+    {
+      "key": "bearer_provider1",
+      "value": ""
+    },
+    {
+      "key": "bearer_provider2",
+      "value": ""
+    },
+    {
+      "key": "bearer_patient",
+      "value": ""
+    },
+    {
+      "key": "admin_username",
+      "value": ""
+    },
+    {
+      "key": "admin_email",
+      "value": ""
+    },
+    {
+      "key": "provider1_username",
+      "value": ""
+    },
+    {
+      "key": "provider1_email",
+      "value": ""
+    },
+    {
+      "key": "provider2_username",
+      "value": ""
+    },
+    {
+      "key": "provider2_email",
+      "value": ""
+    },
+    {
+      "key": "patient_user_username",
+      "value": ""
+    },
+    {
+      "key": "patient_user_email",
+      "value": ""
+    },
+    {
+      "key": "patient_email",
+      "value": ""
+    },
+    {
+      "key": "patient_id",
+      "value": ""
+    },
+    {
+      "key": "provider1_id",
+      "value": ""
+    },
+    {
+      "key": "provider2_id",
+      "value": ""
+    },
+    {
+      "key": "appointment_id",
+      "value": ""
+    },
+    {
+      "key": "provider1_first_name",
+      "value": "STEFFI"
+    },
+    {
+      "key": "provider1_last_name",
+      "value": "RESNICK"
+    },
+    {
+      "key": "provider1_npi",
+      "value": "1073731121"
+    },
+    {
+      "key": "provider1_specialty",
+      "value": "Audiologist"
+    },
+    {
+      "key": "provider2_first_name",
+      "value": "KAREN"
+    },
+    {
+      "key": "provider2_last_name",
+      "value": "FAHEY"
+    },
+    {
+      "key": "provider2_npi",
+      "value": "1003884842"
+    },
+    {
+      "key": "provider2_specialty",
+      "value": "Family Practice"
+    },
+    {
+      "key": "appointment_iso",
+      "value": ""
+    },
+    {
+      "key": "availability_date",
+      "value": ""
+    },
+    {
+      "key": "appointment_notes",
+      "value": "Patient reported mild fever. Follow-up in 2 weeks."
+    }
+  ]
+}
