@@ -8,6 +8,7 @@ package com.wirespeed.clinic.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -62,14 +63,25 @@ public class WebSecurityConfig {
             .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Allow both variations to handle the internal path stripping
-                .requestMatchers("/api/auth/**").permitAll() 
-                .requestMatchers("/auth/**").permitAll()
+                // 1. Public Endpoints
+                .requestMatchers("/api/auth/**", "/auth/**").permitAll() 
                 .requestMatchers("/h2-console/**").permitAll()
+                
+                // 2. ADMIN Only Restrictions - Resolves 403 failures by handling context-path stripping
+                // GET all patients must be restricted to ADMIN
+                .requestMatchers(HttpMethod.GET, "/api/patients", "/patients").hasRole("ADMIN")
+                
+                // DELETE operations for patients and providers must be restricted to ADMIN
+                .requestMatchers(HttpMethod.DELETE, "/api/patients/**", "/patients/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/providers/**", "/providers/**").hasRole("ADMIN")
+                
+                // 3. All other requests require authentication
                 .anyRequest().authenticated()
             );
 
+        // Required for H2 Console visibility
         http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+        
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 

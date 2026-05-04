@@ -10,10 +10,13 @@ import com.wirespeed.clinic.security.JwtUtils;
 import com.wirespeed.clinic.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,28 +37,35 @@ public class AuthController {
     AuthService authService;
 
     /**
-     * Handles user login and returns a JWT.
+     * Handles user login and returns a JWT. 
+     * Updated to handle AuthenticationException to return 401 instead of 500.
      */
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody Map<String, String> loginRequest) {
-        // 1. Authenticate using Spring Security
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.get("username"), 
-                        loginRequest.get("password")
-                )
-        );
+        try {
+            // 1. Authenticate using Spring Security
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.get("username"), 
+                            loginRequest.get("password")
+                    )
+            );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        
-        // 2. Generate Token
-        String username = authentication.getName();
-        String jwt = jwtUtils.generateJwtToken(username);
-        
-        return ResponseEntity.ok(Map.of(
-                "accessToken", jwt, 
-                "tokenType", "Bearer"
-        ));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            
+            // 2. Generate Token
+            String username = authentication.getName();
+            String jwt = jwtUtils.generateJwtToken(username);
+            
+            return ResponseEntity.ok(Map.of(
+                    "accessToken", jwt, 
+                    "tokenType", "Bearer"
+            ));
+        } catch (AuthenticationException e) {
+            // Catching BadCredentialsException or other Auth failures to return 401
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Error: Unauthorized - Invalid username or password"));
+        }
     }
 
     /**
